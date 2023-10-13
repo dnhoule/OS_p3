@@ -1,3 +1,5 @@
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -20,13 +22,12 @@ typedef struct process
 typedef struct job
 {
     int id;
-    char *command;
     process *first_process; /* list of processes in this job */
     pid_t pgid;             /* process group ID */
 
 } job;
 
-job foreground;
+job *foreground;
 struct job *jobs[256];
 int numJobs = 0;
 pid_t shell_pgid;
@@ -71,7 +72,6 @@ int storeJob(process p)
 
             jobs[i] = malloc(sizeof(job));
             jobs[i]->id = i;
-            jobs[i]->command = strdup(p.argv[0]); // Store the command
             jobs[i]->first_process = &p;
             jobs[i]->pgid = getpgid(p.pid); // Set the process group ID
 
@@ -88,7 +88,7 @@ void waitForJob(int pgid)
     int status;
     // printf("BEFORERERER\n");
     printf("Before %d\n", tcgetpgrp(STDIN_FILENO));
-    pid_t terminated_pid = waitpid(WAIT_ANY, &status, WUNTRACED);
+    pid_t terminated_pid = waitpid(-1, &status, WUNTRACED);
     // printf("AFTERRERERE\n");
 
     if (terminated_pid == -1)
@@ -116,7 +116,8 @@ void removeTerminatedJobs(void)
         {
             printf("Child job %d has terminated\n", jobs[i]->pgid);
 
-            free(jobs[i]->command);
+            free(jobs[i]);
+            jobs[i] = NULL;
 
             numJobs--;
         }
@@ -400,22 +401,69 @@ int main(int argc, char const *argv[])
             ++i;
         }
 
-        process p;
-        // Assign values to its members
-        p.next = NULL; // Since not a pipe, no next
-        p.argv = commandArgs;
-        p.argc = i;      // The number of arguments in the argv array
-        p.pid = -1;      // Process ID, assign -1 for now
-        p.completed = 0; // Assuming not completed (0) initially
-        p.stopped = 0;   // Assuming not stopped (0) initially
-        p.status = 0;    // Status value
+        int firstProcess = 1;
 
+        job *j = malloc(sizeof(job));
+
+        j->id = -1;   // Assign -1 for now, not in job list
+        j->pgid = -1; /* process group ID */
+
+        int processIndex = 0;
+        process *p = malloc(sizeof(process));
+        p->argv = malloc(sizeof(char *) * 10);
+        process *next;
+
+        for (int k = 0; k < i; ++k)
+        {
+            // If encountered "|", end process
+            if (strcmp(commandArgs[k], "|") == 0)
+            {
+                p->argc = processIndex; // Num of arguments in command
+                p->completed = 0;       // Assuming not completed (0) initially
+                p->stopped = 0;         // Assuming not stopped (0) initially
+                p->status = 0;          // Status value
+                p->pid = -1;            // Assign -1 for now
+
+                next = malloc(sizeof(process));
+                p->next = next;
+
+                p = p->next;
+                p->argv = malloc(sizeof(char *) * 10);
+                processIndex = 0;
+            }
+            if (k == i - 1)
+            {
+                printf("YOOOO");
+                p->argc = i;      // Num of arguments in command
+                p->completed = 0; // Assuming not completed (0) initially
+                p->stopped = 0;   // Assuming not stopped (0) initially
+                p->status = 0;    // Status value
+                p->pid = -1;      // Assign -1 for now
+                p->next = NULL;
+            }
+            p->argv[processIndex] = malloc(sizeof(char) * 10);
+            strcpy(p->argv[processIndex], commandArgs[k]);
+            printf("%s\n", p->argv[processIndex]);
+            processIndex++;
+
+            // Assign values to its members
+            if (firstProcess)
+            {
+                j->first_process = p;
+                firstProcess = 0;
+            }
+        }
+
+        printf("DEBUGGING, FIRST PROCESS IN JOB INFO: \nargv[0]: %s\nargc: %d\n", j->first_process->argv[0], j->first_process->argc);
+
+        foreground = j;
         // Check if it's a built in command
-        if (!runBuiltInCommands(p))
+
+        if (!runBuiltInCommands(*(j->first_process)))
         {
         }
         // If not built in command, try running executable from PATH
-        else if (run(p))
+        else if (run(*(j->first_process)))
         {
         }
         memset(commandArgs, 0, sizeof(commandArgs));
