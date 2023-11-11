@@ -65,7 +65,7 @@ In this case, instead of running `cmd` and then waiting for it to finish, the sh
 
 ### Pipes
 
-Pipe is one of the basic UNIX concepts and `wsh` supports it. It allows composition of multiple simple programs together to create a command with a complex behavior. This is so powerful that it is basically ubiquitous in shell scripts because you can express very complex behavior with very few lines of code. Pipe, denoted as `|`, redirects standard output of the program on the left side to the input of the program on the right side.
+Pipe is one of the basic UNIX concepts and the shell supports it. It allows composition of multiple simple programs together to create a command with a complex behavior. This is so powerful that it is basically ubiquitous in shell scripts because you can express very complex behavior with very few lines of code. Pipe, denoted as `|`, redirects standard output of the program on the left side to the input of the program on the right side.
 
 ```sh
 <program1> <arglist1> | <program2> <arglist2> | ... | <programN> <arglistN> [&]
@@ -77,21 +77,5 @@ The example below shows a command, which compresses a file `f.txt`, decompress i
 cat f.txt | gzip -c | gunzip -c | tail -n 10
 ```
 
-The processes in this pipe stream should all have the same *process group ID*.  You can read more about processes and process group IDs [here](https://www.win.tue.nl/~aeb/linux/lk/lk-10.html#:~:text=By%20convention%2C%20the%20process%20group,equivalently%2C%20getpgid(0)%20.).
-
-### Miscellaneous Hints
-
-Remember to get the basic functionality of your shell working before worrying about all of the error conditions and end cases. For example, first get a single command running (probably first a command with no arguments, such as `ls`).
-
-Next, add built-in commands. Then, try working on pipes and terminal control. Each of these requires a little more effort on parsing, but each should not be too hard to implement. It is recommended that you separate the process of parsing and execution - parse first, look for syntax errors (if any), and then finally execute the commands.
-
-We simplify the parsing by having a single space ` ` as the only allowed delimiter. It means that any token on the command line will be delimited by a single space ` ` in our tests.
-
-Check the return codes of all system calls from the very beginning of your work. This will often catch errors in how you are invoking these new system calls. It’s also just good programming sense.
-
-Beat up your own code! You are the best (and in this case, the only) tester of this code. Throw lots of different inputs at it and make sure the shell behaves well. Good code comes through testing; you must run many different tests to make sure things work as desired. Don't be gentle – other users certainly won't be.
-
-Finally, keep versions of your code. More advanced programmers will use a source control system such as `git`. Minimally, when you get a piece of functionality working, make a copy of your `.c` file (perhaps a subdirectory with a version number, such as `v1`, `v2`, etc.). By keeping older, working versions around, you can comfortably work on adding new functionality, safe in the knowledge you can always go back to an older, working version if need be.
-
-Error conditions should result in `wsh` terminating with an exit code of -1.  Non-error conditions should result in an exit code of 0.
+-1.  Non-error conditions should result in an exit code of 0.
 
