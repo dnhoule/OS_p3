@@ -13,7 +13,7 @@ In either mode, if you hit the end-of-file marker (EOF), I should call `exit(0)`
 
 To parse the input line into constituent pieces, you might want to use `strsep()`. Read the man page (carefully) for more details.
 
-To execute commands, look into `fork()`, `exec()`, and `wait()/waitpid()`. See the man pages for these functions, and also read the relevant book chapter for a brief overview.
+To execute commands, I used `fork()`, `exec()`, and `wait()/waitpid()`. See the man pages for these functions.
 
 You will note that there are a variety of commands in the `exec` family; for this project, I used `execvp`.
 
