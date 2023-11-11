@@ -15,7 +15,7 @@ To parse the input line into constituent pieces, you might want to use `strsep()
 
 To execute commands, look into `fork()`, `exec()`, and `wait()/waitpid()`. See the man pages for these functions, and also read the relevant book chapter for a brief overview.
 
-You will note that there are a variety of commands in the `exec` family; for this project, you must use `execvp`. You should **not** use the `system()` library function call to run a command. Remember that if `execvp()` is successful, it will not return; if it does return, there was an error (e.g., the command does not exist). The most challenging part is getting the arguments correctly specified.
+You will note that there are a variety of commands in the `exec` family; for this project, I used `execvp`.
 
 ### Paths
 
