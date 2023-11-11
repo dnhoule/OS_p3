@@ -1,99 +1,15 @@
-# CS 537 Project 3 -- Shell
-
-## Administrivia
-
-- **Due Date**: October 10th, at 11:59pm.
-- Projects may be turned in up to 3 days late but you will receive a penalty of 10 percentage points for every day it is turned in late.
-- **Slip Days**:
-    - In case you need extra time on projects,  you each will have 2 slip days for individual projects and 2 slip days for group projects (4 total slip days for the semester). After the due date we will make a copy of the handin directory for on time grading. 
-    - To use a slip day you will submit your files with an additional file `slipdays.txt` in your regular project handin directory. This file should include one thing only and that is a single number, which is the number of slip days you want to use (i.e. 1 or 2). Each consecutive day we will make a copy of any directories which contain one of these `slipdays.txt` files. 
-    - After using up your slip days you can get up to 90% if turned in 1 day late, 80% for 2 days late, and 70% for 3 days late. After 3 days we won't accept submissions.
-    - Any exception will need to be requested from the instructors.
-    - Example of `slipdays.txt`:
-
-```
-1
-```
-
-- Some tests are provided at `~cs537-1/tests/P3`. There is a `README.md` file in that directory which contains the instructions to run the tests. The tests are partially complete and **you are encouraged to create more tests**.
-- Questions: We will be using Piazza for all questions.
-- Collaboration: The assignment must be done by yourself. Copying code (from others) is considered cheating. [Read this](http://pages.cs.wisc.edu/~remzi/Classes/537/Spring2018/dontcheat.html) for more info on what is OK and what is not. Please help us all have a good semester by not doing this.
-- This project is to be done on the [Linux lab machines ](https://csl.cs.wisc.edu/docs/csl/2012-08-16-instructional-facilities/), so you can learn more about programming in C on a typical UNIX-based platform (Linux). Your solution will be tested on these machines.
-- **Handing it in**: Copy archive (`login.tar.gz`) with your files to `~cs537-1/handin/login/P3` where `login` is your CS login. Hopefully, you will do this simply by running `make submit`.
-
-## Before you start --- Makefile
-
-The first task in this project is to create a `Makefile`. A `Makefile` is an easy and powerful way to define complex operations in your project and execute them using `make` in a simple way. You can read more about `make` and `Makefile`s in [GNU's Make Manual](https://www.gnu.org/software/make/manual/) and [Makefile Tutorial](https://makefiletutorial.com/).
-
-Your `Makefile` must include at least the following variables:
-
-* `CC` specifying the compiler. Please use `gcc` or `clang`.
-* `CFLAGS` specifying the arguments for compilation. Use at least the following: `-Wall -Werror -pedantic -std=gnu18`
-* `LOGIN` specifying you login.
-* `SUBMITPATH` specifying the path where you handin your files.
-* `$@` has to be used at least once.
-* `$<` or `$^` has to be used at least once.
-
-Your `Makefile` must include at least the following targets:
-
-* `all` is the first target in your `Makefile` and only runs `wsh` target. `all` is a `.PHONY` target. Creating `all` target as a first target is a common convention, since the first target is executed when `make` is called without a target.
-* `wsh` is a target which depends on `wsh.c` and `wsh.h` and builds the `wsh` binary with the compiler specified in `CC` and compiler flags in `CFLAGS`. Hence `make wsh` will compile your code and create `wsh` binary.
-* `run` depends on `wsh` and executes `wsh` binary.  Hence, after changes to your source, you can run this target to compile and run your solution with just one command.
-* `pack` creates archive called `login.tar.gz`. The archive should contain `wsh.h`, `wsh.c` `Makefile`, and a `README.md`.  The `README.md` file should include your name, cs login, your email, the status of your implementation, and a description of resources used in the creation of your solution.
-* `submit` depends on `pack` target and copies `login.tar.gz` to the `SUBMITPATH` directory. You should run `make submit` to submit your solution.
-
-We encourage you to create your own simple tests while developing your shell. It can be helpful to create a `test` target in your `Makefile`, which will compile your code and run all the tests. Like this, you can speed up your development and make sure, that every change in your source code still passes your tests (i.e. after every change of you source code, you can just type `make test` and the shell will be compiled and tested).
-
 ## Unix Shell
 
-In this project, you’ll build a simple Unix shell. The shell is the heart of the command-line interface, and thus is central to the Unix/C programming environment. Mastering use of the shell is necessary to become proficient in this world; knowing how the shell itself is built is the focus of this project.
+In this project, I built a Unix Shell that handles the same basic functionalities as Bash using C. 
 
-There are three specific objectives to this assignment:
 
-* To further familiarize yourself with the Linux programming environment.
-* To learn how processes are created, destroyed, and managed.
-* To gain exposure to the necessary functionality in shells.
-
-## Overview
-
-In this assignment, you will implement a *command line interpreter (CLI)* or, as it is more commonly known, a *shell*. The shell should operate in this basic way: when you type in a command (in response to its prompt), the shell creates a child process that executes the command you entered and then prompts for more user input when it has finished.
-
-The shells you implement will be similar to, but simpler than, the one you run every day in Unix. If you don't know what shell you are running, it’s probably `bash` or `zsh`. One thing you should do on your own time is to learn more about your shell, by reading the man pages or other online materials.
-
-## Program Specifications
-
-### Basic Shell: `wsh`
-
-Your basic shell, called `wsh` (short for Wisconsin Shell, naturally), is basically an interactive loop: it repeatedly prints a prompt `wsh> ` (note the space after the greater-than sign), parses the input, executes the command specified on that line of input, and waits for the command to finish. This is repeated until the user types `exit`. The name of your final executable should be `wsh`.
-
-The shell can be invoked with either no arguments or a single argument; anything else is an error. Here is the no-argument way:
-
-```sh
-prompt> ./wsh
-wsh> 
-```
-
-At this point, `wsh` is running, and ready to accept commands. Type away!
-
-The mode above is called *interactive* mode, and allows the user to type commands directly. The shell also supports a *batch* mode, which instead reads input from a batch file and executes commands from therein. Here is how you run the shell with a batch file named `script.wsh`:
-
-```sh
-prompt> ./wsh script.wsh
-```
-
-One difference between batch and interactive modes: in interactive mode, a prompt is printed (`wsh> `). In batch mode, no prompt should be printed.
-
-You should structure your shell such that it creates a process for each new command (the exception are `built-in` commands, discussed below). Your basic shell should be able to parse a command and run the program corresponding to the command. For example, if the user types `ls -la /tmp`, your shell should run the program `/bin/ls` with the given arguments `-la` and `/tmp` (how does the shell know to run `/bin/ls`? It’s something called the shell **path**; more on this below).
-
-## Structure
-
-### Basic Shell
+### Specs
 
 The shell is very simple (conceptually): it runs in a while loop, repeatedly asking for input to tell it what command to execute. It then executes that command. The loop continues indefinitely, until the user types the built-in command `exit`, at which point it exits. That’s it!
 
-For reading lines of input, you should use `getline()`. This allows you to obtain arbitrarily long input lines with ease. Generally, the shell will be run in *interactive mode*, where the user types a command (one at a time) and the shell acts on it. However, your shell will also support *batch mode*, in which the shell is given an input file of commands; in this case, the shell should not read user input (from `stdin`) but rather from this file to get the commands to execute.
+For reading lines of input, I used `getline()`. This allows you to obtain arbitrarily long input lines with ease. Generally, the shell will be run in *interactive mode*, where the user types a command (one at a time) and the shell acts on it. However, the shell will also support *batch mode*, in which the shell is given an input file of commands; in this case, the shell should not read user input (from `stdin`) but rather from this file to get the commands to execute.
 
-In either mode, if you hit the end-of-file marker (EOF), you should call `exit(0)` and exit gracefully. EOF can be generated by pressing `Ctrl-D`.
+In either mode, if you hit the end-of-file marker (EOF), I should call `exit(0)` and exit gracefully. EOF can be generated by pressing `Ctrl-D`.
 
 To parse the input line into constituent pieces, you might want to use `strsep()`. Read the man page (carefully) for more details.
 
@@ -111,23 +27,23 @@ It turns out that the user must specify a **path** variable to describe the set 
 
 To check if a particular file exists in a directory and is executable, consider the `access()` system call. For example, when the user types `ls`, and path is set to include both `/usr/bin` and `/bin` (assuming empty path list at first, `/bin` is added, then `/usr/bin` is added), try `access("/usr/bin/ls", X_OK)`. If that fails, try `/bin/ls`. If that fails too, it is an error.
 
-Your initial shell path should contain one directory: `/bin`
+The initial shell path should contain one directory: `/bin`
 
-Note: Most shells allow you to specify a binary specifically without using a search path, using either **absolute paths** or **relative paths**. For example, a user could type the absolute path `/bin/ls` and execute the `ls` binary without a search path being needed. A user could also specify a relative path which starts with the current working directory and specifies the executable directly, e.g., `./main`. In this project, you do not have to worry about these features.
+Note: Most shells allow you to specify a binary specifically without using a search path, using either **absolute paths** or **relative paths**. For example, a user could type the absolute path `/bin/ls` and execute the `ls` binary without a search path being needed. A user could also specify a relative path which starts with the current working directory and specifies the executable directly, e.g., `./main`. In this project, I do not handle this feature.
 
 ### Built-in Commands
 
-Whenever your shell accepts a command, it should check whether the command is a **built-in command** or not. If it is, it should not be executed like other programs. Instead, your shell will invoke your implementation of the built-in command. For example, to implement the `exit` built-in command, you simply call `exit(0);` in your wsh source code, which then will exit the shell.
+Whenever the shell accepts a command, it should check whether the command is a **built-in command** or not. If it is, it should not be executed like other programs. Instead, the shell will invoke your implementation of the built-in command. 
 
-In this project, you should implement `exit`, `cd`, `jobs`, `fg` and `bg` as built-in commands.
+In this project, I implement `exit`, `cd`, `jobs`, `fg` and `bg` as built-in commands.
 
-* `exit`: When the user types exit, your shell should simply call the `exit` system call with 0 as a parameter. It is an error to pass any arguments to `exit`.
+* `exit`: When the user types exit, the shell should simply call the `exit` system call with 0 as a parameter. It is an error to pass any arguments to `exit`.
 
 * `cd`: `cd` always take one argument (0 or >1 args should be signaled as an error). To change directories, use the `chdir()` system call with the argument supplied by the user; if `chdir` fails, that is also an error.
 
 * `jobs`: `jobs` command prints jobs in the background in the following format `<id>: <program name> <arg1> <arg2> … <argN> [&]`. `<id>` is an index number for the command that was run in the background. If the command was initiated as a background job (as explained below), an ampersand (`&`) is appended after `<argN>`. In cases where the command line includes a pipe (as detailed below), the format should be `<id>: <program 1 name> <arg1> … <argN> | <program 2 name> <arg1> … <argN> | … [&]`. 
 
-* `fg` and `bg`: `fg` and `bg` commands are used for moving processes into foreground/background. This operation changes association with the controlling terminal. These commands can be run with 0 or 1 argument. If the argument is specified, it is the `<id>` of the job to be moved to foreground/background. If there is no argument, the largest job `<id>` is used.  You can read about these commands in the Linux manual (e.g. `man fg`).  You will also want to read about getting and setting the terminal foreground process in the `man tcgetpgrp` and `man tcsetpgrp`.
+* `fg` and `bg`: `fg` and `bg` commands are used for moving processes into foreground/background. This operation changes association with the controlling terminal. These commands can be run with 0 or 1 argument. If the argument is specified, it is the `<id>` of the job to be moved to foreground/background. If there is no argument, the largest job `<id>` is used. 
 
 * For each new job, the job `<id>` for it should be the smallest positive integer not in use. For instance, if `1`, `2` and `4` are used for job `<id>`s, `<id>` for the next job is `3`. 
 
@@ -135,17 +51,17 @@ In this project, you should implement `exit`, `cd`, `jobs`, `fg` and `bg` as bui
 
 `Ctrl-C` sends a `SIGINT` and `Ctrl-Z` sends a `SIGTSTP` signal. The terminal is a controlling terminal for those processes receiving signals. When a process runs in the background, it should not receive these signals. The signals can also be sent with `kill` or `pkill`.
 
-Note that with terminal job control support, you need to properly set foreground process group always, when the foreground process is changed. Please read `man tcsetpgrp` for more information.
+Note that with terminal job control support, you need to properly set foreground process group always, when the foreground process is changed.
 
 ### Background Job
 
-Your shell will also allow the user to launch background commands. This is accomplished with the ampersand operator as follows:
+The shell will also allow the user to launch background commands. This is accomplished with the ampersand operator as follows:
 
 ```sh
 wsh> <cmd> <args…> &
 ```
 
-In this case, instead of running `cmd` and then waiting for it to finish, your shell should run `cmd` in the background and allow the user to run another command.
+In this case, instead of running `cmd` and then waiting for it to finish, the shell should run `cmd` in the background and allow the user to run another command.
 
 ### Pipes
 
