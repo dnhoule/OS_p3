@@ -50,11 +50,8 @@ void sigttou_handler(int signo)
 
 void sigint_handler(int signo)
 {
-
-    // printf("HANDLER: Foreground pgid: %d\n", tcgetpgrp(STDIN_FILENO));
-    // printf("HANDLER: Shell pgid: %d\n", shell_pgid);
     tcsetpgrp(STDIN_FILENO, shell_pgid);
-    // printf("HANDLER: Caught SIGINT. Shell has regained control.\n");
+
 }
 
 job *find_job(pid_t pgid)
@@ -68,7 +65,6 @@ job *find_job(pid_t pgid)
 
             if (jobs[i] != NULL)
             {
-                printf("Should not have hit index %d\n", i);
                 return jobs[i];
             }
         }
@@ -114,8 +110,6 @@ int storeJob(job *j)
         {
             j->id = i;
             jobs[i] = j;
-
-            // Make sure to update the job list count (numJobs) if you use it
             numJobs++;
 
             return 0;
@@ -126,25 +120,16 @@ int storeJob(job *j)
 void waitForJob(int pgid)
 {
     int status;
-    // printf("BEFORERERER\n");
-    // printf("Before %d\n", tcgetpgrp(STDIN_FILENO));
     pid_t terminated_pid = waitpid(-1, &status, WUNTRACED);
-    // printf("AFTERRERERE\n");
 
-    if (terminated_pid == -1)
-    {
-        // printf("Error, process not found\n");
-    }
     else
     {
         if (status == 5247)
         {
-            printf("Terminated by SIGSTP\n");
+
             foreground->status = 1;
             storeJob(foreground);
         }
-        // The process with process ID terminated_pid has finished
-        // printf("Process with PID %d has finished.\n", terminated_pid);
     }
 }
 void removeTerminatedJobs(void)
@@ -180,7 +165,7 @@ void removeTerminatedJobs(void)
             }
             if (allProcessesTerminated)
             {
-                printf("All processes in job %d have terminated\n", jobs[i]->pgid);
+               
                 jobs[i] = NULL;
 
                 numJobs--;
@@ -197,15 +182,8 @@ void display_jobs()
 
         if (jobs[i] != NULL)
         {
-            printf("%d: ", jobs[i]->id);
-
             for (p = jobs[i]->first_process; p; p = p->next)
             {
-                for (int j = 0; j < p->argc; ++j)
-                {
-
-                    printf("%s ", p->argv[j]);
-                }
                 if (p->next != NULL)
                 {
                     printf("| ");
@@ -225,10 +203,6 @@ int fg(job *j, int stopped)
 
     tcsetpgrp(STDIN_FILENO, j->pgid);
 
-    // printf("Foreground Process Before: %d\n", tcgetpgrp(STDIN_FILENO));
-    // printf("Shells Process: %d\n", shell_pgid);
-
-    // If stopped in background, continue it in foreground
     if (stopped)
     {
         kill(-j->pgid, SIGCONT);
@@ -238,11 +212,6 @@ int fg(job *j, int stopped)
 
     // Now that foreground finished, put shell back in foreground
     tcsetpgrp(STDIN_FILENO, shell_pgid);
-
-    // printf("Foreground Process After: %d\n", tcgetpgrp(STDIN_FILENO));
-
-    // printf("WHATTTT\n");
-
     return 0;
 }
 
@@ -256,7 +225,7 @@ int bg(job *j, int stopped)
     // printf("PGID: %d\n", id);
     if (stopped)
     {
-        // printf("Process %d continued in background\n", j->pgid);
+        printf("Process %d continued in background\n", j->pgid);
 
         if (kill(-j->pgid, SIGCONT) < 0)
         {
@@ -266,7 +235,6 @@ int bg(job *j, int stopped)
         j->status = 0;
     }
     printf("Process %d continued in background\n", j->pgid);
-    // printf("Process %d running in background\n", id);
 
     return 0;
 }
@@ -274,13 +242,13 @@ int bg(job *j, int stopped)
 void sigstp_handler(int signo)
 {
 
-    // // If there was a job in foreground, send it to background
-    // if (foreground != NULL)
-    // {
-    //     foreground->status = 1; // Set the running process to a stopped status
-    //     storeJob(foreground);   // Add this process to the jobs list
-    //     foreground = NULL;
-    // }
+    
+    if (foreground != NULL)
+    {
+        foreground->status = 1; // Set the running process to a stopped status
+        storeJob(foreground);   // Add this process to the jobs list
+        foreground = NULL;
+    }
 
     if (tcgetpgrp(STDIN_FILENO) != shell_pgid)
     {
@@ -416,7 +384,6 @@ int runExec(process *p, job *j, int infile, int outfile)
         signal(SIGINT, sigint_handler);
         signal(SIGQUIT, SIG_DFL);
         signal(SIGTSTP, SIG_DFL);
-        // signal(SIGTSTP, sigstp_handler);
         signal(SIGTTIN, SIG_DFL);
         signal(SIGTTOU, SIG_DFL);
         signal(SIGCHLD, SIG_DFL);
@@ -432,7 +399,7 @@ int runExec(process *p, job *j, int infile, int outfile)
         {
             tcsetpgrp(STDIN_FILENO, getpgid(childId));
         }
-        // printf("Infile: %d, Outfile: %d\n", infile, outfile);
+    
         if (infile != STDIN_FILENO)
         {
             dup2(infile, STDIN_FILENO);
@@ -441,13 +408,13 @@ int runExec(process *p, job *j, int infile, int outfile)
 
         if (outfile != STDOUT_FILENO)
         {
-            // printf("Infile: %d, Outfile: %d\n", infile, outfile);
+          
             dup2(outfile, STDOUT_FILENO);
-            // printf("BRUHHHHH\n");
+         
             close(outfile);
         }
 
-        // printf("EXECING %s\n", p->argv[0]);
+       
         if (execvp(p->argv[0], p->argv) == -1)
         {
             printf("execvp failed\n");
@@ -498,11 +465,11 @@ void runJob(job *j)
         }
         else
             outfile = j->stdout;
-        // printf("argv[0]: %s\nargc: %d\n", p->argv[0], p->argc);
+        
         if (!runBuiltInCommands((*p)))
         {
         }
-        // If not built in command, try running executable from PATH
+        
         else if (runExec(p, j, infile, outfile))
         {
         }
@@ -538,15 +505,6 @@ int main(int argc, char const *argv[])
     signal(SIGTTOU, SIG_IGN);
 
     pid_t shell_pid = getpid();
-
-    // // shell_pgid = getpgid(shell_pid);
-
-    // setpgid(shell_pid, shell_pid);
-    // shell_pgid = getpgrp();
-
-    // while (tcgetpgrp(STDIN_FILENO) != (shell_pgid = getpgrp()))
-    //     kill(-shell_pgid, SIGTTIN);
-
     if (getpid() != getsid(0))
     {
 
@@ -554,17 +512,7 @@ int main(int argc, char const *argv[])
     }
 
     shell_pgid = getpgrp();
-    // else
-    // {
-    //     shell_pgid = getpgid(getpid());
-    // }
-    // if (getpid() != getsid(0))
-    // {
 
-    //     setpgid(shell_pid, shell_pid);
-    // }
-
-    // shell_pgid = getpgid(shell_pid);
 
     /* Grab control of the terminal. */
 
@@ -582,13 +530,7 @@ int main(int argc, char const *argv[])
 
     char *line = NULL;
 
-    // Handler for SIGTSTP
-
-    // Set up a signal handler for SIGCHLD
-    // signal(SIGCHLD, sigchld_handler);
-
-    // printf("OG SHELL PGID: %d\n", shell_pid);
-
+   
     // Initalize jobs to be all NULL
     for (int i = 0; i < 256; i++)
     {
@@ -662,8 +604,7 @@ int main(int argc, char const *argv[])
 
         for (int k = 0; k < i; ++k)
         {
-            // printf("Process Index: %d\n", processIndex);
-            // If encountered "|", end process
+           
 
             if (strcmp(commandArgs[k], "|") == 0)
             {
@@ -718,7 +659,7 @@ int main(int argc, char const *argv[])
         // Remove any background jobs that have terminated
         removeTerminatedJobs();
 
-        // printf("NUMJOBS: %d\n", numJobs);
+       
         if (interactive)
         {
             printf("wsh> ");
